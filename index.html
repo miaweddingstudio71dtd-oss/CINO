@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Phục Chế Ảnh Cũ Với AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono&family=Permanent+Marker&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="index.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/genai": "https://esm.sh/@google/genai@^1.4.0",
+          "react/": "https://aistudiocdn.com/react@^19.1.1/",
+          "react": "https://aistudiocdn.com/react@^19.1.1",
+          "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+          "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.12"
+        }
+      }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body class="bg-[#1E1F20] font-['Inter'] text-gray-300 antialiased">
+    <div
+      class="min-h-screen flex items-center justify-center p-4"
+      role="main"
+    >
+      <div
+        class="bg-[#2a2b2e] px-8 pt-8 pb-6 rounded-2xl shadow-2xl w-full max-w-6xl space-y-6"
+      >
+        <div class="text-center">
+          <h1 class="text-3xl font-bold text-white tracking-tight">
+            Phục Chế Ảnh Cũ Với AI
+          </h1>
+          <p class="text-gray-400 mt-2 text-sm">
+            Tải lên ảnh của bạn và sử dụng Gemini Template của Tizino để phục
+            chế lại những ký ức
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <!-- Left Column -->
+          <div class="space-y-4">
+            <h2 class="text-center font-bold text-lg text-white">
+              Ảnh cần phục chế
+            </h2>
+            <div
+              id="upload-area"
+              class="relative w-full h-96 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center text-gray-400 cursor-pointer hover:border-gray-500 transition-colors"
+            >
+              <div id="upload-placeholder" class="text-center p-4">
+                <svg
+                  class="mx-auto h-12 w-12"
+                  stroke="currentColor"
+                  fill="none"
+                  viewBox="0 0 48 48"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <p class="mt-2">
+                  Kéo và thả ảnh cũ của bạn vào đây hoặc nhấp để tải lên
+                </p>
+              </div>
+              <img
+                id="original-image"
+                alt="Original image"
+                class="hidden w-full h-full object-contain rounded-lg"
+              />
+            </div>
+            <input id="file-input" type="file" class="hidden" accept="image/*" />
+
+            <div class="h-16 flex flex-col justify-center">
+              <label
+                for="restoration-level"
+                class="block mb-2 text-sm font-medium text-gray-300 text-center"
+                >Mức độ phục chế: <span id="slider-value">50</span>%</label
+              >
+              <input
+                id="restoration-level"
+                type="range"
+                min="0"
+                max="100"
+                value="50"
+                class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+
+            <button
+              id="restore-button"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              disabled
+            >
+              Phục chế ảnh
+            </button>
+          </div>
+
+          <!-- Right Column -->
+          <div class="space-y-4">
+            <h2 class="text-center font-bold text-lg text-white">
+              Ảnh đã phục chế
+            </h2>
+            <div
+              id="restored-image-container"
+              class="w-full h-96 bg-[#222325] rounded-lg flex items-center justify-center text-gray-400 relative"
+            >
+              <img
+                id="restored-image"
+                alt="Restored image"
+                class="hidden w-full h-full object-contain rounded-lg"
+              />
+              <div id="restored-placeholder" class="text-center text-gray-500">
+                <p>Kết quả sẽ xuất hiện ở đây</p>
+              </div>
+              <div id="loading-spinner" class="hidden absolute">
+                <svg
+                  class="animate-spin h-10 w-10 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+            <div class="h-16"></div>
+            <button
+              id="download-button"
+              class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              disabled
+            >
+              Tải Ảnh
+            </button>
+          </div>
+        </div>
+
+        <p id="status" class="text-center text-gray-400 min-h-[24px] pt-4">
+          Vui lòng tải ảnh lên để bắt đầu.
+        </p>
+      </div>
+    </div>
+    <script type="module" src="index.tsx"></script>
+
+    <div id="banner-root"></div>
+    <script type="text/babel" data-type="module">
+      import React, { useState, useEffect } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import { motion, AnimatePresence } from 'framer-motion';
+
+      const REMIX_IDEAS = [
+        "to generate a movie poster.",
+        "to visualize a product placement.",
+        "to reimagine your character designs.",
+        "to create new scenes",
+        "to preview different camera shots.",
+      ];
+
+      const CloseIcon = () => (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      );
+
+      const Banner = () => {
+          const [isVisible, setIsVisible] = useState(true);
+          const [index, setIndex] = useState(0);
+
+          useEffect(() => {
+              const intervalId = setInterval(() => {
+                  setIndex(prevIndex => (prevIndex + 1) % REMIX_IDEAS.length);
+              }, 3500);
+
+              return () => clearInterval(intervalId);
+          }, []);
+
+          const handleSelectKeyClick = async (e) => {
+            e.preventDefault();
+            if (window.aistudio?.openSelectKey) {
+              await window.aistudio.openSelectKey();
+            } else {
+              console.log('window.aistudio.openSelectKey() not available.');
+              alert('API key selection is not available in this environment.');
+            }
+          };
+          
+          if (!isVisible) {
+            return null;
+          }
+
+          return (
+              <header className="app-banner">
+                  <div className="app-banner-content">
+                      <div className="banner-left">
+                          <p>Powered by the Gemini API</p>
+                      </div>
+                      <div className="remix-ideas">
+                          <span className="remix-prompt">Remix this app...</span>
+                          <div className="remix-text-container">
+                              <AnimatePresence mode="wait">
+                                  <motion.span
+                                      key={index}
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, y: -10 }}
+                                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                                      className="remix-text"
+                                  >
+                                      {REMIX_IDEAS[index]}
+                                  </motion.span>
+                              </AnimatePresence>
+                          </div>
+                      </div>
+                      <div className="banner-right">
+                          <div className="banner-buttons">
+                              <a
+                                  href="https://aistudio.google.com/apps"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="banner-button button-gemini-chat"
+                              >
+                                  Apps on AI Studio
+                              </a>
+                              <a
+                                  href="#"
+                                  onClick={handleSelectKeyClick}
+                                  className="banner-button button-ai-studio"
+                              >
+                                  Add your API Key
+                              </a>
+                          </div>
+                          <button
+                            className="close-button"
+                            onClick={() => setIsVisible(false)}
+                            aria-label="Close notice">
+                            <CloseIcon />
+                          </button>
+                      </div>
+                  </div>
+              </header>
+          );
+      };
+
+      const container = document.getElementById('banner-root');
+      if (container) {
+        const root = createRoot(container);
+        root.render(<React.StrictMode><Banner /></React.StrictMode>);
+      }
+    </script>
+  </body>
+</html>

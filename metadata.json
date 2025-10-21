@@ -1,0 +1,5 @@
+{
+  "name": "Phục Chế Ảnh",
+  "description": "Tải lên ảnh của bạn và sử dụng Gemini Template của Tizino để phục chế lại những ký ức\n\n",
+  "requestFramePermissions": []
+}
